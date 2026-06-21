@@ -1,0 +1,50 @@
+@use '@/styles/variables.scss' as *;
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-sm;
+  white-space: nowrap;
+}
+
+.sm {
+  padding: 4rpx 16rpx;
+}
+
+.md {
+  padding: 8rpx 24rpx;
+}
+
+.text {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}
+
+.normal {
+  background-color: $color-status-normal-bg;
+  .text {
+    color: $color-status-normal;
+  }
+}
+
+.expiring {
+  background-color: $color-status-expiring-bg;
+  .text {
+    color: $color-status-expiring;
+  }
+}
+
+.expired {
+  background-color: $color-status-expired-bg;
+  .text {
+    color: $color-status-expired;
+  }
+}
+
+.usedup {
+  background-color: $color-status-usedup-bg;
+  .text {
+    color: $color-status-usedup;
+  }
+}

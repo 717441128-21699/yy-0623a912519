@@ -1,0 +1,213 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 200rpx;
+}
+
+.section {
+  padding: $spacing-md $page-padding 0;
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.searchBar {
+  padding: $spacing-lg $page-padding $spacing-md;
+}
+
+.searchInput {
+  background-color: $color-bg-card;
+  border-radius: $radius-button;
+  padding: 0 $spacing-lg;
+  height: $button-height-md;
+  display: flex;
+  align-items: center;
+  box-shadow: $shadow-card;
+}
+
+.searchInputText {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  flex: 1;
+}
+
+.searchInputPlaceholder {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  flex: 1;
+}
+
+.cardList {
+  padding: 0 $page-padding;
+  max-height: 600rpx;
+}
+
+.deductForm {
+  margin: 0 $page-padding;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.selectedCardInfo {
+  padding-bottom: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.selectedName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.selectedProject {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.selectedRemaining {
+  font-size: $font-size-sm;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+  margin-top: $spacing-xs;
+}
+
+.formItem {
+  margin-bottom: $spacing-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.formLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+  display: block;
+}
+
+.formInput {
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+  padding: 0 $spacing-lg;
+  height: $button-height-md;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.optionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.optionItem {
+  padding: 16rpx 28rpx;
+  border-radius: $radius-button;
+  background-color: $color-bg-page;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-base;
+}
+
+.optionItemActive {
+  background-color: $color-primary;
+  color: $color-text-white;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: $radius-xs;
+  border: 2rpx solid $color-border;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-base;
+}
+
+.checkboxChecked {
+  background-color: $color-primary;
+  border-color: $color-primary;
+}
+
+.checkboxIcon {
+  font-size: 24rpx;
+  color: $color-text-white;
+}
+
+.checkboxLabel {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+}
+
+.footerBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: $spacing-md $page-padding;
+  padding-bottom: calc($spacing-md + env(safe-area-inset-bottom));
+  background-color: $color-bg-card;
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.submitBtn {
+  @include button-reset;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-button;
+  height: $button-height-lg;
+  color: $color-text-white;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  width: 100%;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.99);
+  }
+}
+
+.submitBtnDisabled {
+  background: $color-text-disabled !important;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  margin: 0 $page-padding;
+}
+
+.emptyIcon {
+  font-size: 80rpx;
+  opacity: 0.3;
+  margin-bottom: $spacing-md;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}

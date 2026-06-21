@@ -1,0 +1,174 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 160rpx;
+}
+
+.formContainer {
+  padding: $spacing-lg $page-padding;
+}
+
+.formCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+}
+
+.formSectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.formItem {
+  margin-bottom: $spacing-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.formLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+  display: block;
+}
+
+.formLabelRequired {
+  color: $color-error;
+  margin-right: 4rpx;
+}
+
+.formInput {
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+  padding: 0 $spacing-lg;
+  height: $button-height-md;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formTextarea {
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  width: 100%;
+  min-height: 160rpx;
+  box-sizing: border-box;
+}
+
+.optionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.optionItem {
+  padding: 16rpx 28rpx;
+  border-radius: $radius-button;
+  background-color: $color-bg-page;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-base;
+}
+
+.optionItemActive {
+  background-color: $color-primary;
+  color: $color-text-white;
+}
+
+.typeSwitch {
+  display: flex;
+  background-color: $color-bg-page;
+  border-radius: $radius-button;
+  padding: 4rpx;
+}
+
+.typeSwitchItem {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  transition: all $transition-base;
+}
+
+.typeSwitchItemActive {
+  background-color: $color-primary;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.subItemsSection {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1rpx solid $color-divider;
+}
+
+.subItemRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-md;
+  gap: $spacing-sm;
+}
+
+.subItemName {
+  width: 160rpx;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+}
+
+.subItemInput {
+  flex: 1;
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+  padding: 0 $spacing-lg;
+  height: $button-height-sm;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  text-align: center;
+}
+
+.footerBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: $spacing-md $page-padding;
+  padding-bottom: calc($spacing-md + env(safe-area-inset-bottom));
+  background-color: $color-bg-card;
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.submitBtn {
+  @include button-reset;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-button;
+  height: $button-height-lg;
+  color: $color-text-white;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  width: 100%;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.99);
+  }
+}
+
+.submitBtnDisabled {
+  background: $color-text-disabled !important;
+}

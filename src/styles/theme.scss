@@ -1,0 +1,48 @@
+// ============================================
+// 主题配色变量（医美疗程卡本）
+// ============================================
+
+// 品牌主题色：优雅紫系，符合医美行业气质
+$color-primary: #6C5CE7;
+$color-primary-light: #A29BFE;
+$color-primary-dark: #5548D5;
+$color-primary-bg: rgba(108, 92, 231, 0.08);
+
+// 辅助色
+$color-secondary: #FD79A8;
+$color-secondary-light: #FDCBDE;
+
+// 功能色
+$color-success: #00B894;
+$color-success-light: rgba(0, 184, 148, 0.1);
+$color-warning: #FF7D00;
+$color-warning-light: rgba(255, 125, 0, 0.1);
+$color-error: #F53F3F;
+$color-error-light: rgba(245, 63, 63, 0.1);
+$color-info: #6C5CE7;
+
+// 背景色
+$color-bg-page: #F8F9FC;
+$color-bg-card: #ffffff;
+$color-bg-hover: #F2F3F5;
+
+// 文本色
+$color-text-primary: #1D2129;
+$color-text-secondary: #4E5969;
+$color-text-tertiary: #86909C;
+$color-text-disabled: #C9CDD4;
+$color-text-white: #ffffff;
+
+// 边框色
+$color-border: #E5E6EB;
+$color-divider: #F2F3F5;
+
+// 业务状态色
+$color-status-normal: #00B894;
+$color-status-normal-bg: rgba(0, 184, 148, 0.12);
+$color-status-expiring: #FF7D00;
+$color-status-expiring-bg: rgba(255, 125, 0, 0.12);
+$color-status-expired: #F53F3F;
+$color-status-expired-bg: rgba(245, 63, 63, 0.12);
+$color-status-usedup: #86909C;
+$color-status-usedup-bg: rgba(134, 144, 156, 0.12);

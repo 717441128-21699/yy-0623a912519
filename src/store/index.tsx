@@ -1,0 +1,159 @@
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import Taro from '@tarojs/taro'
+import type { CustomerCard, ReminderItem, OverviewStats, DeductRecord } from '@/types'
+import { mockCustomerCards, mockReminders, mockOverviewStats } from '@/data/mock'
+import { computeCardStatus, generateId, generateReminderMessage } from '@/utils'
+import dayjs from 'dayjs'
+
+interface StoreContextType {
+  cards: CustomerCard[]
+  reminders: ReminderItem[]
+  overviewStats: OverviewStats
+  addCard: (card: Omit<CustomerCard, 'id' | 'status' | 'records' | 'createDate'>) => void
+  deductCard: (cardId: string, record: Omit<DeductRecord, 'id' | 'date'>, subItemName?: string) => void
+  refreshStats: () => void
+}
+
+const StoreContext = createContext<StoreContextType | null>(null)
+
+const STORAGE_KEY = 'medical_aesthetic_cards'
+
+export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [cards, setCards] = useState<CustomerCard[]>([])
+  const [reminders, setReminders] = useState<ReminderItem[]>([])
+  const [overviewStats, setOverviewStats] = useState<OverviewStats>(mockOverviewStats)
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const stored = await Taro.getStorage({ key: STORAGE_KEY })
+        if (stored.data) {
+          const parsed = JSON.parse(stored.data) as CustomerCard[]
+          setCards(parsed.map(c => ({ ...c, status: computeCardStatus(c) })))
+        } else {
+          setCards(mockCustomerCards)
+          await Taro.setStorage({ key: STORAGE_KEY, data: JSON.stringify(mockCustomerCards) })
+        }
+      } catch (e) {
+        console.error('[Store] loadData error:', e)
+        setCards(mockCustomerCards)
+      }
+      setReminders(mockReminders)
+    }
+    loadData()
+  }, [])
+
+  const persistCards = async (newCards: CustomerCard[]) => {
+    try {
+      await Taro.setStorage({ key: STORAGE_KEY, data: JSON.stringify(newCards) })
+    } catch (e) {
+      console.error('[Store] persistCards error:', e)
+    }
+  }
+
+  const addCard = useCallback((cardData: Omit<CustomerCard, 'id' | 'status' | 'records' | 'createDate'>) => {
+    const newCard: CustomerCard = {
+      ...cardData,
+      id: generateId(),
+      createDate: dayjs().format('YYYY-MM-DD'),
+      records: [],
+      status: 'normal'
+    }
+    newCard.status = computeCardStatus(newCard)
+    setCards(prev => {
+      const next = [newCard, ...prev]
+      persistCards(next)
+      return next
+    })
+
+    if (getRemaining(newCard) > 0) {
+      const newReminder: ReminderItem = {
+        id: generateId(),
+        customerId: newCard.id,
+        customerName: newCard.customerName,
+        phone: newCard.phone,
+        projectName: newCard.projectName,
+        remainingCount: getRemaining(newCard),
+        lastVisitDate: newCard.createDate,
+        suggestedDate: dayjs().add(7, 'day').format('YYYY-MM-DD'),
+        messageTemplate: generateReminderMessage(newCard.customerName, newCard.projectName, getRemaining(newCard))
+      }
+      setReminders(prev => [newReminder, ...prev])
+    }
+  }, [])
+
+  const deductCard = useCallback((cardId: string, record: Omit<DeductRecord, 'id' | 'date'>, subItemName?: string) => {
+    setCards(prev => {
+      const next = prev.map(card => {
+        if (card.id !== cardId) return card
+        const newRecord: DeductRecord = {
+          ...record,
+          id: generateId(),
+          date: dayjs().format('YYYY-MM-DD')
+        }
+        let newSubItems = card.subItems
+        if (card.cardType === 'combo' && subItemName && card.subItems) {
+          newSubItems = card.subItems.map(si => {
+            if (si.name === subItemName) {
+              return { ...si, usedCount: si.usedCount + 1 }
+            }
+            return si
+          })
+        }
+        const updated: CustomerCard = {
+          ...card,
+          usedCount: card.usedCount + 1,
+          records: [newRecord, ...card.records],
+          subItems: newSubItems
+        }
+        updated.status = computeCardStatus(updated)
+        return updated
+      })
+      persistCards(next)
+      return next
+    })
+    refreshStats()
+  }, [])
+
+  const refreshStats = useCallback(() => {
+    setCards(currentCards => {
+      const today = dayjs().format('YYYY-MM-DD')
+      let todayCount = 0
+      let totalRemaining = 0
+      let expiringCount = 0
+      currentCards.forEach(card => {
+        totalRemaining += getRemaining(card)
+        if (card.status === 'expiring' || card.status === 'expired') {
+          expiringCount++
+        }
+        card.records.forEach(r => {
+          if (r.date === today) todayCount++
+        })
+      })
+      setOverviewStats(prev => ({
+        ...prev,
+        todayDeductCount: todayCount,
+        totalRemainingCount: totalRemaining,
+        expiringCustomerCount: expiringCount
+      }))
+      return currentCards
+    })
+  }, [])
+
+  return (
+    <StoreContext.Provider value={{ cards, reminders, overviewStats, addCard, deductCard, refreshStats }}>
+      {children}
+    </StoreContext.Provider>
+  )
+}
+
+function getRemaining(card: CustomerCard): number {
+  const total = card.totalCount + (card.giftedCount || 0) + (card.compensatedCount || 0)
+  return Math.max(0, total - card.usedCount)
+}
+
+export const useStore = () => {
+  const ctx = useContext(StoreContext)
+  if (!ctx) throw new Error('useStore must be used within StoreProvider')
+  return ctx
+}
