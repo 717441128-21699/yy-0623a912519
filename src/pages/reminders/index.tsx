@@ -14,22 +14,13 @@ const RemindersPage: React.FC = () => {
   const { cards } = useStore()
   const [activeTab, setActiveTab] = useState<TabType>('thisWeek')
 
-  const computedReminders = useMemo<ReminderItem[]>(() => {
+  const allReminders = useMemo(() => {
     const now = dayjs()
-    const weekEnd = now.endOf('week')
-
-    return cards
+    const result = cards
       .filter(card => card.status !== 'usedup' && card.status !== 'expired')
-      .filter(card => {
-        const remaining = getRemainingCount(card)
-        if (remaining <= 0) return false
-        if (activeTab === 'expiring') {
-          return card.status === 'expiring'
-        }
-        return true
-      })
       .map(card => {
         const remaining = getRemainingCount(card)
+        if (remaining <= 0) return null
         const lastVisit = card.records.length > 0 ? card.records[0].date : card.createDate
         const suggestedDate = dayjs(lastVisit).add(10, 'day')
         return {
@@ -44,24 +35,35 @@ const RemindersPage: React.FC = () => {
           messageTemplate: generateReminderMessage(card.customerName, card.projectName, remaining)
         }
       })
-      .filter(r => {
-        if (activeTab === 'thisWeek') {
-          return dayjs(r.suggestedDate).isBefore(weekEnd)
-        }
-        return true
-      })
+      .filter(item => item !== null)
       .sort((a, b) => a.suggestedDate.localeCompare(b.suggestedDate))
-  }, [cards, activeTab])
+    return result as ReminderItem[]
+  }, [cards])
 
   const stats = useMemo(() => {
     const now = dayjs()
     const weekEnd = now.endOf('week')
-    const thisWeekCount = computedReminders.filter(r =>
+    const thisWeekCount = allReminders.filter(r =>
       dayjs(r.suggestedDate).isBefore(weekEnd)
     ).length
     const expiringCount = cards.filter(c => c.status === 'expiring').length
-    return { thisWeek: thisWeekCount, expiring: expiringCount, total: computedReminders.length }
-  }, [computedReminders, cards])
+    return { thisWeek: thisWeekCount, expiring: expiringCount, total: allReminders.length }
+  }, [allReminders, cards])
+
+  const computedReminders = useMemo(() => {
+    const now = dayjs()
+    const weekEnd = now.endOf('week')
+    if (activeTab === 'expiring') {
+      return allReminders.filter(r => {
+        const card = cards.find(c => c.id === r.customerId)
+        return card && card.status === 'expiring'
+      })
+    }
+    if (activeTab === 'thisWeek') {
+      return allReminders.filter(r => dayjs(r.suggestedDate).isBefore(weekEnd))
+    }
+    return allReminders
+  }, [allReminders, activeTab, cards])
 
   const handleCopy = async (message: string) => {
     try {

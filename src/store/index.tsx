@@ -31,7 +31,7 @@ function calcStats(cards: CustomerCard[]): OverviewStats {
   let monthlyAmount = 0
   cards.forEach(card => {
     totalRemaining += getRemaining(card)
-    if (card.status === 'expiring' || card.status === 'expired') {
+    if (card.status === 'expiring') {
       expiringCount++
     }
     card.records.forEach(r => {
