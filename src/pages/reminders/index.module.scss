@@ -87,6 +87,12 @@
   padding: $spacing-lg;
   margin-bottom: $spacing-md;
   box-shadow: $shadow-card;
+  transition: all $transition-base;
+}
+
+.reminderCardContacted {
+  opacity: 0.65;
+  background-color: #f7f7fa;
 }
 
 .reminderHeader {
@@ -119,6 +125,15 @@
   font-size: $font-size-xs;
   background-color: $color-error-light;
   color: $color-error;
+  font-weight: $font-weight-medium;
+}
+
+.contactedBadge {
+  padding: 6rpx 16rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  background-color: $color-success-light;
+  color: $color-success;
   font-weight: $font-weight-medium;
 }
 
@@ -195,6 +210,11 @@
 .btnCall {
   background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
   color: $color-text-white;
+}
+
+.btnDone {
+  background-color: $color-success-light;
+  color: $color-success;
 }
 
 .emptyState {

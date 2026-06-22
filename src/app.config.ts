@@ -4,7 +4,8 @@ export default defineAppConfig({
     'pages/customers/index',
     'pages/create-card/index',
     'pages/deduct/index',
-    'pages/reminders/index'
+    'pages/reminders/index',
+    'pages/card-detail/index'
   ],
   window: {
     backgroundTextStyle: 'light',

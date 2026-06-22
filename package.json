@@ -46,6 +46,7 @@
     "@tarojs/plugin-platform-tt": "4.1.9",
     "@tarojs/plugin-platform-weapp": "4.1.9",
     "@tarojs/react": "4.1.9",
+    "@tarojs/router": "^4.1.9",
     "@tarojs/runtime": "4.1.9",
     "@tarojs/shared": "4.1.9",
     "@tarojs/taro": "4.1.9",

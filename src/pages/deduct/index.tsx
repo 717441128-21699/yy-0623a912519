@@ -122,6 +122,12 @@ const DeductPage: React.FC = () => {
               <Text className={styles.selectedName}>{selectedCard.customerName}</Text>
               <Text className={styles.selectedProject}>{selectedCard.projectName}</Text>
               <Text className={styles.selectedRemaining}>剩余 {remaining} 次</Text>
+              <Text
+                style={{ fontSize: 24, color: '#6C5CE7', marginTop: 8 }}
+                onClick={() => Taro.navigateTo({ url: `/pages/card-detail/index?cardId=${selectedCard.id}` })}
+              >
+                查看详情 →
+              </Text>
             </View>
 
             {selectedCard.cardType === 'combo' && selectedCard.subItems && (

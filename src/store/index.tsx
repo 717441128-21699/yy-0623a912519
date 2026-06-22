@@ -8,14 +8,18 @@ import dayjs from 'dayjs'
 interface StoreContextType {
   cards: CustomerCard[]
   overviewStats: OverviewStats
+  contactedMap: Record<string, string>
   addCard: (card: Omit<CustomerCard, 'id' | 'status' | 'records' | 'createDate'>) => void
+  updateCard: (cardId: string, updates: Partial<Omit<CustomerCard, 'id' | 'status' | 'createDate' | 'records'>>) => void
   deductCard: (cardId: string, record: Omit<DeductRecord, 'id' | 'date'>, subItemName?: string) => void
+  markContacted: (customerId: string) => void
   refreshStats: () => void
 }
 
 const StoreContext = createContext<StoreContextType | null>(null)
 
 const STORAGE_KEY = 'medical_aesthetic_cards'
+const CONTACTED_KEY = 'medical_aesthetic_contacted'
 
 function getRemaining(card: CustomerCard): number {
   const total = card.totalCount + (card.giftedCount || 0) + (card.compensatedCount || 0)
@@ -51,6 +55,7 @@ function calcStats(cards: CustomerCard[]): OverviewStats {
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [cards, setCards] = useState<CustomerCard[]>([])
+  const [contactedMap, setContactedMap] = useState<Record<string, string>>({})
   const [overviewStats, setOverviewStats] = useState<OverviewStats>({
     todayDeductCount: 0,
     totalRemainingCount: 0,
@@ -58,10 +63,28 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     monthlyRenewalAmount: 0
   })
   const cardsRef = useRef<CustomerCard[]>([])
+  const contactedRef = useRef<Record<string, string>>({})
+
+  const persistCards = async (newCards: CustomerCard[]) => {
+    try {
+      await Taro.setStorage({ key: STORAGE_KEY, data: JSON.stringify(newCards) })
+    } catch (e) {
+      console.error('[Store] persistCards error:', e)
+    }
+  }
+
+  const persistContacted = async (newMap: Record<string, string>) => {
+    try {
+      await Taro.setStorage({ key: CONTACTED_KEY, data: JSON.stringify(newMap) })
+    } catch (e) {
+      console.error('[Store] persistContacted error:', e)
+    }
+  }
 
   useEffect(() => {
     const loadData = async () => {
       let initialCards: CustomerCard[]
+      let initialContacted: Record<string, string> = {}
       try {
         const stored = await Taro.getStorage({ key: STORAGE_KEY })
         if (stored.data) {
@@ -72,23 +95,25 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           await Taro.setStorage({ key: STORAGE_KEY, data: JSON.stringify(mockCustomerCards) })
         }
       } catch (e) {
-        console.error('[Store] loadData error:', e)
+        console.error('[Store] loadCards error:', e)
         initialCards = mockCustomerCards
+      }
+      try {
+        const storedContacted = await Taro.getStorage({ key: CONTACTED_KEY })
+        if (storedContacted.data) {
+          initialContacted = JSON.parse(storedContacted.data) as Record<string, string>
+        }
+      } catch (e) {
+        console.error('[Store] loadContacted error:', e)
       }
       setCards(initialCards)
       cardsRef.current = initialCards
+      setContactedMap(initialContacted)
+      contactedRef.current = initialContacted
       setOverviewStats(calcStats(initialCards))
     }
     loadData()
   }, [])
-
-  const persistCards = async (newCards: CustomerCard[]) => {
-    try {
-      await Taro.setStorage({ key: STORAGE_KEY, data: JSON.stringify(newCards) })
-    } catch (e) {
-      console.error('[Store] persistCards error:', e)
-    }
-  }
 
   const addCard = useCallback((cardData: Omit<CustomerCard, 'id' | 'status' | 'records' | 'createDate'>) => {
     const newCard: CustomerCard = {
@@ -102,6 +127,21 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     setCards(prev => {
       const next = [newCard, ...prev]
+      cardsRef.current = next
+      persistCards(next)
+      setOverviewStats(calcStats(next))
+      return next
+    })
+  }, [])
+
+  const updateCard = useCallback((cardId: string, updates: Partial<Omit<CustomerCard, 'id' | 'status' | 'createDate' | 'records'>>) => {
+    setCards(prev => {
+      const next = prev.map(card => {
+        if (card.id !== cardId) return card
+        const updated: CustomerCard = { ...card, ...updates }
+        updated.status = computeCardStatus(updated)
+        return updated
+      })
       cardsRef.current = next
       persistCards(next)
       setOverviewStats(calcStats(next))
@@ -143,12 +183,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     })
   }, [])
 
+  const markContacted = useCallback((customerId: string) => {
+    const today = dayjs().format('YYYY-MM-DD')
+    const key = `${today}_${customerId}`
+    setContactedMap(prev => {
+      const next = { ...prev, [key]: today }
+      contactedRef.current = next
+      persistContacted(next)
+      return next
+    })
+  }, [])
+
   const refreshStats = useCallback(() => {
     setOverviewStats(calcStats(cardsRef.current))
   }, [])
 
   return (
-    <StoreContext.Provider value={{ cards, overviewStats, addCard, deductCard, refreshStats }}>
+    <StoreContext.Provider value={{ cards, overviewStats, contactedMap, addCard, updateCard, deductCard, markContacted, refreshStats }}>
       {children}
     </StoreContext.Provider>
   )

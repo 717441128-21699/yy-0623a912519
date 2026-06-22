@@ -11,11 +11,11 @@ import type { ReminderItem } from '@/types'
 type TabType = 'thisWeek' | 'expiring' | 'all'
 
 const RemindersPage: React.FC = () => {
-  const { cards } = useStore()
+  const { cards, contactedMap, markContacted } = useStore()
   const [activeTab, setActiveTab] = useState<TabType>('thisWeek')
+  const today = dayjs().format('YYYY-MM-DD')
 
   const allReminders = useMemo(() => {
-    const now = dayjs()
     const result = cards
       .filter(card => card.status !== 'usedup' && card.status !== 'expired')
       .map(card => {
@@ -23,6 +23,7 @@ const RemindersPage: React.FC = () => {
         if (remaining <= 0) return null
         const lastVisit = card.records.length > 0 ? card.records[0].date : card.createDate
         const suggestedDate = dayjs(lastVisit).add(10, 'day')
+        const contactedKey = `${today}_${card.id}`
         return {
           id: card.id,
           customerId: card.id,
@@ -32,27 +33,31 @@ const RemindersPage: React.FC = () => {
           remainingCount: remaining,
           lastVisitDate: lastVisit,
           suggestedDate: suggestedDate.format('YYYY-MM-DD'),
-          messageTemplate: generateReminderMessage(card.customerName, card.projectName, remaining)
+          messageTemplate: generateReminderMessage(card.customerName, card.projectName, remaining),
+          contacted: !!contactedMap[contactedKey],
+          contactedDate: contactedMap[contactedKey]
         }
       })
       .filter(item => item !== null)
-      .sort((a, b) => a.suggestedDate.localeCompare(b.suggestedDate))
+      .sort((a, b) => {
+        if (a.contacted !== b.contacted) return a.contacted ? 1 : -1
+        return a.suggestedDate.localeCompare(b.suggestedDate)
+      })
     return result as ReminderItem[]
-  }, [cards])
+  }, [cards, contactedMap, today])
 
   const stats = useMemo(() => {
-    const now = dayjs()
-    const weekEnd = now.endOf('week')
+    const weekEnd = dayjs().endOf('week')
     const thisWeekCount = allReminders.filter(r =>
       dayjs(r.suggestedDate).isBefore(weekEnd)
     ).length
     const expiringCount = cards.filter(c => c.status === 'expiring').length
-    return { thisWeek: thisWeekCount, expiring: expiringCount, total: allReminders.length }
+    const pendingCount = allReminders.filter(r => !r.contacted).length
+    return { thisWeek: thisWeekCount, expiring: expiringCount, total: allReminders.length, pending: pendingCount }
   }, [allReminders, cards])
 
   const computedReminders = useMemo(() => {
-    const now = dayjs()
-    const weekEnd = now.endOf('week')
+    const weekEnd = dayjs().endOf('week')
     if (activeTab === 'expiring') {
       return allReminders.filter(r => {
         const card = cards.find(c => c.id === r.customerId)
@@ -65,9 +70,10 @@ const RemindersPage: React.FC = () => {
     return allReminders
   }, [allReminders, activeTab, cards])
 
-  const handleCopy = async (message: string) => {
+  const handleCopy = async (reminder: ReminderItem) => {
     try {
-      await Taro.setClipboardData({ data: message })
+      await Taro.setClipboardData({ data: reminder.messageTemplate })
+      markContacted(reminder.customerId)
       Taro.showToast({ title: '话术已复制', icon: 'success' })
     } catch (e) {
       console.error('[Reminders] copy error:', e)
@@ -75,19 +81,32 @@ const RemindersPage: React.FC = () => {
     }
   }
 
-  const handleCall = (phone: string) => {
-    Taro.makePhoneCall({ phoneNumber: phone })
+  const handleCall = (reminder: ReminderItem) => {
+    Taro.makePhoneCall({ phoneNumber: reminder.phone })
+      .then(() => {
+        markContacted(reminder.customerId)
+      })
       .catch(e => console.error('[Reminders] call error:', e))
+  }
+
+  const handleMarkContacted = (reminder: ReminderItem) => {
+    if (reminder.contacted) return
+    markContacted(reminder.customerId)
+    Taro.showToast({ title: '已标记联系', icon: 'success' })
+  }
+
+  const handleGoDetail = (customerId: string) => {
+    Taro.navigateTo({ url: `/pages/card-detail/index?cardId=${customerId}` })
   }
 
   const isUrgent = (date: string) => {
     return dayjs(date).diff(dayjs(), 'day') <= 3
   }
 
-  const tabOptions: { key: TabType; label: string; count: number }[] = [
-    { key: 'thisWeek', label: '本周提醒', count: stats.thisWeek },
-    { key: 'expiring', label: '即将到期', count: stats.expiring },
-    { key: 'all', label: '全部', count: stats.total }
+  const tabOptions = [
+    { key: 'thisWeek' as TabType, label: '本周提醒', count: stats.thisWeek },
+    { key: 'expiring' as TabType, label: '即将到期', count: stats.expiring },
+    { key: 'all' as TabType, label: '全部', count: stats.total }
   ]
 
   return (
@@ -97,12 +116,12 @@ const RemindersPage: React.FC = () => {
         <Text className={styles.headerSubtitle}>本周需联系客户</Text>
         <View className={styles.headerStats}>
           <View className={styles.headerStatItem}>
-            <Text className={styles.headerStatNum}>{stats.thisWeek}</Text>
-            <Text className={styles.headerStatLabel}>本周待提醒</Text>
+            <Text className={styles.headerStatNum}>{stats.pending}</Text>
+            <Text className={styles.headerStatLabel}>待联系</Text>
           </View>
           <View className={styles.headerStatItem}>
-            <Text className={styles.headerStatNum}>{stats.expiring}</Text>
-            <Text className={styles.headerStatLabel}>即将到期</Text>
+            <Text className={styles.headerStatNum}>{allReminders.length - stats.pending}</Text>
+            <Text className={styles.headerStatLabel}>今日已联系</Text>
           </View>
         </View>
       </View>
@@ -129,14 +148,21 @@ const RemindersPage: React.FC = () => {
             </View>
           ) : (
             computedReminders.map(reminder => (
-              <View key={reminder.id} className={styles.reminderCard}>
+              <View
+                key={reminder.id}
+                className={classnames(styles.reminderCard, reminder.contacted && styles.reminderCardContacted)}
+              >
                 <View className={styles.reminderHeader}>
-                  <View className={styles.customerInfo}>
+                  <View className={styles.customerInfo} onClick={() => handleGoDetail(reminder.customerId)}>
                     <Text className={styles.customerName}>{reminder.customerName}</Text>
-                    <Text className={styles.customerProject}>{reminder.projectName}</Text>
+                    <Text className={styles.customerProject}>{reminder.projectName} · 查看详情 →</Text>
                   </View>
-                  {isUrgent(reminder.suggestedDate) && (
-                    <Text className={styles.urgentBadge}>紧急</Text>
+                  {reminder.contacted ? (
+                    <Text className={styles.contactedBadge}>✓ 已联系</Text>
+                  ) : (
+                    isUrgent(reminder.suggestedDate) && (
+                      <Text className={styles.urgentBadge}>紧急</Text>
+                    )
                   )}
                 </View>
 
@@ -164,16 +190,24 @@ const RemindersPage: React.FC = () => {
                 <View className={styles.actionRow}>
                   <Button
                     className={classnames(styles.actionBtn, styles.btnCopy)}
-                    onClick={() => handleCopy(reminder.messageTemplate)}
+                    onClick={() => handleCopy(reminder)}
                   >
-                    复制话术
+                    {reminder.contacted ? '重新复制' : '复制话术'}
                   </Button>
                   <Button
                     className={classnames(styles.actionBtn, styles.btnCall)}
-                    onClick={() => handleCall(reminder.phone)}
+                    onClick={() => handleCall(reminder)}
                   >
                     拨打电话
                   </Button>
+                  {!reminder.contacted && (
+                    <Button
+                      className={classnames(styles.actionBtn, styles.btnDone)}
+                      onClick={() => handleMarkContacted(reminder)}
+                    >
+                      标记联系
+                    </Button>
+                  )}
                 </View>
               </View>
             ))

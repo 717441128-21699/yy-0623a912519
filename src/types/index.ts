@@ -48,6 +48,8 @@ export interface ReminderItem {
   lastVisitDate: string
   suggestedDate: string
   messageTemplate: string
+  contacted?: boolean
+  contactedDate?: string
 }
 
 export interface OverviewStats {

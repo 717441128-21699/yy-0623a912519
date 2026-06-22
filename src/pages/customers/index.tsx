@@ -44,7 +44,7 @@ const CustomersPage: React.FC = () => {
   }, [cards])
 
   const handleCardClick = (cardId: string) => {
-    Taro.showToast({ title: '查看详情', icon: 'none' })
+    Taro.navigateTo({ url: `/pages/card-detail/index?cardId=${cardId}` })
   }
 
   return (
