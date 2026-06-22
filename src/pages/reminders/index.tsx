@@ -11,7 +11,7 @@ import type { ReminderItem } from '@/types'
 type TabType = 'thisWeek' | 'expiring' | 'all'
 
 const RemindersPage: React.FC = () => {
-  const { reminders, cards } = useStore()
+  const { cards } = useStore()
   const [activeTab, setActiveTab] = useState<TabType>('thisWeek')
 
   const computedReminders = useMemo<ReminderItem[]>(() => {
@@ -60,8 +60,8 @@ const RemindersPage: React.FC = () => {
       dayjs(r.suggestedDate).isBefore(weekEnd)
     ).length
     const expiringCount = cards.filter(c => c.status === 'expiring').length
-    return { thisWeek: thisWeekCount || reminders.length, expiring: expiringCount, total: computedReminders.length }
-  }, [computedReminders, cards, reminders.length])
+    return { thisWeek: thisWeekCount, expiring: expiringCount, total: computedReminders.length }
+  }, [computedReminders, cards])
 
   const handleCopy = async (message: string) => {
     try {

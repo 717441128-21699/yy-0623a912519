@@ -14,6 +14,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     totalCount: 10,
     usedCount: 3,
     giftedCount: 1,
+    paymentAmount: 3800,
     expireDate: now.add(180, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(30, 'day').format('YYYY-MM-DD'),
     note: '皮肤偏干，建议补水',
@@ -32,6 +33,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     cardType: 'combo',
     totalCount: 15,
     usedCount: 5,
+    paymentAmount: 6800,
     expireDate: now.add(20, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(100, 'day').format('YYYY-MM-DD'),
     note: '敏感肌，注意舒缓',
@@ -54,6 +56,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     cardType: 'single',
     totalCount: 6,
     usedCount: 6,
+    paymentAmount: 2600,
     expireDate: now.add(60, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(200, 'day').format('YYYY-MM-DD'),
     records: []
@@ -66,6 +69,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     cardType: 'single',
     totalCount: 8,
     usedCount: 2,
+    paymentAmount: 3200,
     expireDate: now.subtract(5, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(365, 'day').format('YYYY-MM-DD'),
     note: '痘痘肌，注意清洁',
@@ -80,6 +84,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     totalCount: 12,
     usedCount: 4,
     compensatedCount: 1,
+    paymentAmount: 2400,
     expireDate: now.add(200, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(60, 'day').format('YYYY-MM-DD'),
     records: []
@@ -92,6 +97,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     cardType: 'single',
     totalCount: 10,
     usedCount: 1,
+    paymentAmount: 5600,
     expireDate: now.add(15, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(150, 'day').format('YYYY-MM-DD'),
     records: []
@@ -104,6 +110,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     cardType: 'single',
     totalCount: 5,
     usedCount: 0,
+    paymentAmount: 1980,
     expireDate: now.add(25, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(20, 'day').format('YYYY-MM-DD'),
     records: []
@@ -116,6 +123,7 @@ const rawCards: Omit<CustomerCard, 'status'>[] = [
     cardType: 'single',
     totalCount: 8,
     usedCount: 2,
+    paymentAmount: 3600,
     expireDate: now.add(90, 'day').format('YYYY-MM-DD'),
     createDate: now.subtract(45, 'day').format('YYYY-MM-DD'),
     records: []

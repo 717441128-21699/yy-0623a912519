@@ -28,6 +28,7 @@ export interface CustomerCard {
   usedCount: number
   giftedCount?: number
   compensatedCount?: number
+  paymentAmount?: number
   expireDate: string
   createDate: string
   note?: string

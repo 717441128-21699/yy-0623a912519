@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react'
 import Taro from '@tarojs/taro'
-import type { CustomerCard, ReminderItem, OverviewStats, DeductRecord } from '@/types'
-import { mockCustomerCards, mockReminders, mockOverviewStats } from '@/data/mock'
-import { computeCardStatus, generateId, generateReminderMessage } from '@/utils'
+import type { CustomerCard, OverviewStats, DeductRecord } from '@/types'
+import { mockCustomerCards } from '@/data/mock'
+import { computeCardStatus, generateId } from '@/utils'
 import dayjs from 'dayjs'
 
 interface StoreContextType {
   cards: CustomerCard[]
-  reminders: ReminderItem[]
   overviewStats: OverviewStats
   addCard: (card: Omit<CustomerCard, 'id' | 'status' | 'records' | 'createDate'>) => void
   deductCard: (cardId: string, record: Omit<DeductRecord, 'id' | 'date'>, subItemName?: string) => void
@@ -18,27 +17,67 @@ const StoreContext = createContext<StoreContextType | null>(null)
 
 const STORAGE_KEY = 'medical_aesthetic_cards'
 
+function getRemaining(card: CustomerCard): number {
+  const total = card.totalCount + (card.giftedCount || 0) + (card.compensatedCount || 0)
+  return Math.max(0, total - card.usedCount)
+}
+
+function calcStats(cards: CustomerCard[]): OverviewStats {
+  const today = dayjs().format('YYYY-MM-DD')
+  const currentMonth = dayjs().format('YYYY-MM')
+  let todayCount = 0
+  let totalRemaining = 0
+  let expiringCount = 0
+  let monthlyAmount = 0
+  cards.forEach(card => {
+    totalRemaining += getRemaining(card)
+    if (card.status === 'expiring' || card.status === 'expired') {
+      expiringCount++
+    }
+    card.records.forEach(r => {
+      if (r.date === today) todayCount++
+    })
+    if (card.createDate.startsWith(currentMonth) && card.paymentAmount) {
+      monthlyAmount += card.paymentAmount
+    }
+  })
+  return {
+    todayDeductCount: todayCount,
+    totalRemainingCount: totalRemaining,
+    expiringCustomerCount: expiringCount,
+    monthlyRenewalAmount: monthlyAmount
+  }
+}
+
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [cards, setCards] = useState<CustomerCard[]>([])
-  const [reminders, setReminders] = useState<ReminderItem[]>([])
-  const [overviewStats, setOverviewStats] = useState<OverviewStats>(mockOverviewStats)
+  const [overviewStats, setOverviewStats] = useState<OverviewStats>({
+    todayDeductCount: 0,
+    totalRemainingCount: 0,
+    expiringCustomerCount: 0,
+    monthlyRenewalAmount: 0
+  })
+  const cardsRef = useRef<CustomerCard[]>([])
 
   useEffect(() => {
     const loadData = async () => {
+      let initialCards: CustomerCard[]
       try {
         const stored = await Taro.getStorage({ key: STORAGE_KEY })
         if (stored.data) {
           const parsed = JSON.parse(stored.data) as CustomerCard[]
-          setCards(parsed.map(c => ({ ...c, status: computeCardStatus(c) })))
+          initialCards = parsed.map(c => ({ ...c, status: computeCardStatus(c) }))
         } else {
-          setCards(mockCustomerCards)
+          initialCards = mockCustomerCards
           await Taro.setStorage({ key: STORAGE_KEY, data: JSON.stringify(mockCustomerCards) })
         }
       } catch (e) {
         console.error('[Store] loadData error:', e)
-        setCards(mockCustomerCards)
+        initialCards = mockCustomerCards
       }
-      setReminders(mockReminders)
+      setCards(initialCards)
+      cardsRef.current = initialCards
+      setOverviewStats(calcStats(initialCards))
     }
     loadData()
   }, [])
@@ -60,26 +99,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       status: 'normal'
     }
     newCard.status = computeCardStatus(newCard)
+
     setCards(prev => {
       const next = [newCard, ...prev]
+      cardsRef.current = next
       persistCards(next)
+      setOverviewStats(calcStats(next))
       return next
     })
-
-    if (getRemaining(newCard) > 0) {
-      const newReminder: ReminderItem = {
-        id: generateId(),
-        customerId: newCard.id,
-        customerName: newCard.customerName,
-        phone: newCard.phone,
-        projectName: newCard.projectName,
-        remainingCount: getRemaining(newCard),
-        lastVisitDate: newCard.createDate,
-        suggestedDate: dayjs().add(7, 'day').format('YYYY-MM-DD'),
-        messageTemplate: generateReminderMessage(newCard.customerName, newCard.projectName, getRemaining(newCard))
-      }
-      setReminders(prev => [newReminder, ...prev])
-    }
   }, [])
 
   const deductCard = useCallback((cardId: string, record: Omit<DeductRecord, 'id' | 'date'>, subItemName?: string) => {
@@ -109,47 +136,22 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         updated.status = computeCardStatus(updated)
         return updated
       })
+      cardsRef.current = next
       persistCards(next)
+      setOverviewStats(calcStats(next))
       return next
     })
-    refreshStats()
   }, [])
 
   const refreshStats = useCallback(() => {
-    setCards(currentCards => {
-      const today = dayjs().format('YYYY-MM-DD')
-      let todayCount = 0
-      let totalRemaining = 0
-      let expiringCount = 0
-      currentCards.forEach(card => {
-        totalRemaining += getRemaining(card)
-        if (card.status === 'expiring' || card.status === 'expired') {
-          expiringCount++
-        }
-        card.records.forEach(r => {
-          if (r.date === today) todayCount++
-        })
-      })
-      setOverviewStats(prev => ({
-        ...prev,
-        todayDeductCount: todayCount,
-        totalRemainingCount: totalRemaining,
-        expiringCustomerCount: expiringCount
-      }))
-      return currentCards
-    })
+    setOverviewStats(calcStats(cardsRef.current))
   }, [])
 
   return (
-    <StoreContext.Provider value={{ cards, reminders, overviewStats, addCard, deductCard, refreshStats }}>
+    <StoreContext.Provider value={{ cards, overviewStats, addCard, deductCard, refreshStats }}>
       {children}
     </StoreContext.Provider>
   )
-}
-
-function getRemaining(card: CustomerCard): number {
-  const total = card.totalCount + (card.giftedCount || 0) + (card.compensatedCount || 0)
-  return Math.max(0, total - card.usedCount)
 }
 
 export const useStore = () => {

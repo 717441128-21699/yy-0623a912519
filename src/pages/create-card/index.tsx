@@ -19,6 +19,7 @@ const CreateCardPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState('')
   const [giftedCount, setGiftedCount] = useState('')
   const [compensatedCount, setCompensatedCount] = useState('')
+  const [paymentAmount, setPaymentAmount] = useState('')
   const [expireDate, setExpireDate] = useState(dayjs().add(180, 'day').format('YYYY-MM-DD'))
   const [note, setNote] = useState('')
   const [contraindications, setContraindications] = useState('')
@@ -80,6 +81,7 @@ const CreateCardPage: React.FC = () => {
         usedCount: 0,
         giftedCount: giftedCount ? parseInt(giftedCount) : undefined,
         compensatedCount: compensatedCount ? parseInt(compensatedCount) : undefined,
+        paymentAmount: paymentAmount ? parseFloat(paymentAmount) : undefined,
         expireDate,
         note: note || undefined,
         contraindications: contraindications || undefined,
@@ -96,6 +98,7 @@ const CreateCardPage: React.FC = () => {
       setTotalCount('')
       setGiftedCount('')
       setCompensatedCount('')
+      setPaymentAmount('')
       setExpireDate(dayjs().add(180, 'day').format('YYYY-MM-DD'))
       setNote('')
       setContraindications('')
@@ -248,6 +251,17 @@ const CreateCardPage: React.FC = () => {
               placeholder="补偿的额外次数"
               value={compensatedCount}
               onInput={e => setCompensatedCount(e.detail.value)}
+            />
+          </View>
+
+          <View className={styles.formItem}>
+            <Text className={styles.formLabel}>收款/续卡金额（选填）</Text>
+            <Input
+              className={styles.formInput}
+              type="digit"
+              placeholder="本次收款金额（元）"
+              value={paymentAmount}
+              onInput={e => setPaymentAmount(e.detail.value)}
             />
           </View>
 
