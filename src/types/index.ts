@@ -18,6 +18,26 @@ export interface DeductRecord {
   note?: string
 }
 
+export type ContactType = 'copy' | 'call' | 'manual'
+
+export interface ContactRecord {
+  id: string
+  customerId: string
+  type: ContactType
+  typeLabel: string
+  dateTime: string
+  resultNote?: string
+}
+
+export interface RenewalRecord {
+  id: string
+  dateTime: string
+  addAmount: number
+  extendDays: number
+  addCount: number
+  note?: string
+}
+
 export interface CustomerCard {
   id: string
   customerName: string
@@ -35,6 +55,7 @@ export interface CustomerCard {
   contraindications?: string
   subItems?: SubItem[]
   records: DeductRecord[]
+  renewalRecords?: RenewalRecord[]
   status: CardStatus
 }
 

@@ -1,26 +1,29 @@
 import React, { useState, useMemo } from 'react'
-import { View, Text, ScrollView, Button } from '@tarojs/components'
+import { View, Text, ScrollView, Button, Input } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import classnames from 'classnames'
 import dayjs from 'dayjs'
 import styles from './index.module.scss'
 import { useStore } from '@/store'
 import { generateReminderMessage, getRemainingCount, formatDateCN } from '@/utils'
-import type { ReminderItem } from '@/types'
+import type { ReminderItem, ContactType } from '@/types'
 
 type TabType = 'thisWeek' | 'expiring' | 'all'
+type ContactFilter = 'pending' | 'done' | 'expiredUncontacted'
 
 const RemindersPage: React.FC = () => {
-  const { cards, contactedMap, markContacted } = useStore()
+  const { cards, contactedMap, addContactRecord } = useStore()
   const [activeTab, setActiveTab] = useState<TabType>('thisWeek')
+  const [contactFilter, setContactFilter] = useState<ContactFilter>('pending')
+  const [searchKeyword, setSearchKeyword] = useState('')
   const today = dayjs().format('YYYY-MM-DD')
 
   const allReminders = useMemo(() => {
     const result = cards
-      .filter(card => card.status !== 'usedup' && card.status !== 'expired')
       .map(card => {
         const remaining = getRemainingCount(card)
-        if (remaining <= 0) return null
+        const isUsable = card.status !== 'usedup'
+        if (!isUsable && remaining <= 0) return null
         const lastVisit = card.records.length > 0 ? card.records[0].date : card.createDate
         const suggestedDate = dayjs(lastVisit).add(10, 'day')
         const contactedKey = `${today}_${card.id}`
@@ -35,7 +38,8 @@ const RemindersPage: React.FC = () => {
           suggestedDate: suggestedDate.format('YYYY-MM-DD'),
           messageTemplate: generateReminderMessage(card.customerName, card.projectName, remaining),
           contacted: !!contactedMap[contactedKey],
-          contactedDate: contactedMap[contactedKey]
+          contactedDate: contactedMap[contactedKey],
+          status: card.status
         }
       })
       .filter(item => item !== null)
@@ -43,37 +47,87 @@ const RemindersPage: React.FC = () => {
         if (a.contacted !== b.contacted) return a.contacted ? 1 : -1
         return a.suggestedDate.localeCompare(b.suggestedDate)
       })
-    return result as ReminderItem[]
+    return result as (ReminderItem & { status: string })[]
   }, [cards, contactedMap, today])
+
+  const contactFilterCounts = useMemo(() => {
+    let pending = 0
+    let done = 0
+    let expiredUncontacted = 0
+    allReminders.forEach(r => {
+      if (r.status === 'expired' && !r.contacted) {
+        expiredUncontacted++
+      } else if (r.contacted) {
+        done++
+      } else {
+        pending++
+      }
+    })
+    return { pending, done, expiredUncontacted }
+  }, [allReminders])
 
   const stats = useMemo(() => {
     const weekEnd = dayjs().endOf('week')
     const thisWeekCount = allReminders.filter(r =>
-      dayjs(r.suggestedDate).isBefore(weekEnd)
+      r.status !== 'expired' && dayjs(r.suggestedDate).isBefore(weekEnd)
     ).length
     const expiringCount = cards.filter(c => c.status === 'expiring').length
-    const pendingCount = allReminders.filter(r => !r.contacted).length
-    return { thisWeek: thisWeekCount, expiring: expiringCount, total: allReminders.length, pending: pendingCount }
+    const totalActive = allReminders.filter(r => r.status !== 'expired').length
+    return { thisWeek: thisWeekCount, expiring: expiringCount, total: totalActive }
   }, [allReminders, cards])
+
+  const tabOptions = [
+    { key: 'thisWeek' as TabType, label: '本周提醒', count: stats.thisWeek },
+    { key: 'expiring' as TabType, label: '即将到期', count: stats.expiring },
+    { key: 'all' as TabType, label: '全部', count: stats.total }
+  ]
+
+  const contactFilterOptions = [
+    { key: 'pending' as ContactFilter, label: '待联系', count: contactFilterCounts.pending },
+    { key: 'done' as ContactFilter, label: '已联系', count: contactFilterCounts.done },
+    { key: 'expiredUncontacted' as ContactFilter, label: '已过期未联系', count: contactFilterCounts.expiredUncontacted }
+  ]
 
   const computedReminders = useMemo(() => {
     const weekEnd = dayjs().endOf('week')
+    let list = allReminders
     if (activeTab === 'expiring') {
-      return allReminders.filter(r => {
+      list = list.filter(r => {
         const card = cards.find(c => c.id === r.customerId)
         return card && card.status === 'expiring'
       })
+    } else if (activeTab === 'thisWeek') {
+      list = list.filter(r => r.status !== 'expired' && dayjs(r.suggestedDate).isBefore(weekEnd))
+    } else {
+      list = list.filter(r => r.status !== 'expired')
     }
-    if (activeTab === 'thisWeek') {
-      return allReminders.filter(r => dayjs(r.suggestedDate).isBefore(weekEnd))
+
+    if (contactFilter === 'pending') {
+      list = list.filter(r => !r.contacted && r.status !== 'expired')
+    } else if (contactFilter === 'done') {
+      list = list.filter(r => r.contacted)
+    } else if (contactFilter === 'expiredUncontacted') {
+      list = allReminders.filter(r => r.status === 'expired' && !r.contacted)
     }
-    return allReminders
-  }, [allReminders, activeTab, cards])
+
+    if (searchKeyword.trim()) {
+      const kw = searchKeyword.trim().toLowerCase()
+      list = list.filter(r =>
+        r.customerName.toLowerCase().includes(kw) ||
+        r.projectName.toLowerCase().includes(kw)
+      )
+    }
+
+    return list.sort((a, b) => {
+      if (a.contacted !== b.contacted) return a.contacted ? 1 : -1
+      return a.suggestedDate.localeCompare(b.suggestedDate)
+    })
+  }, [allReminders, activeTab, contactFilter, searchKeyword, cards])
 
   const handleCopy = async (reminder: ReminderItem) => {
     try {
       await Taro.setClipboardData({ data: reminder.messageTemplate })
-      markContacted(reminder.customerId)
+      addContactRecord(reminder.customerId, 'copy' as ContactType)
       Taro.showToast({ title: '话术已复制', icon: 'success' })
     } catch (e) {
       console.error('[Reminders] copy error:', e)
@@ -84,14 +138,14 @@ const RemindersPage: React.FC = () => {
   const handleCall = (reminder: ReminderItem) => {
     Taro.makePhoneCall({ phoneNumber: reminder.phone })
       .then(() => {
-        markContacted(reminder.customerId)
+        addContactRecord(reminder.customerId, 'call' as ContactType)
       })
       .catch(e => console.error('[Reminders] call error:', e))
   }
 
   const handleMarkContacted = (reminder: ReminderItem) => {
     if (reminder.contacted) return
-    markContacted(reminder.customerId)
+    addContactRecord(reminder.customerId, 'manual' as ContactType)
     Taro.showToast({ title: '已标记联系', icon: 'success' })
   }
 
@@ -103,30 +157,40 @@ const RemindersPage: React.FC = () => {
     return dayjs(date).diff(dayjs(), 'day') <= 3
   }
 
-  const tabOptions = [
-    { key: 'thisWeek' as TabType, label: '本周提醒', count: stats.thisWeek },
-    { key: 'expiring' as TabType, label: '即将到期', count: stats.expiring },
-    { key: 'all' as TabType, label: '全部', count: stats.total }
-  ]
-
   return (
     <View className={styles.page}>
       <View className={styles.header}>
         <Text className={styles.headerTitle}>提醒日历</Text>
-        <Text className={styles.headerSubtitle}>本周需联系客户</Text>
+        <Text className={styles.headerSubtitle}>保持每天跟进，客户续卡率翻倍</Text>
         <View className={styles.headerStats}>
           <View className={styles.headerStatItem}>
-            <Text className={styles.headerStatNum}>{stats.pending}</Text>
+            <Text className={styles.headerStatNum}>{contactFilterCounts.pending}</Text>
             <Text className={styles.headerStatLabel}>待联系</Text>
           </View>
           <View className={styles.headerStatItem}>
-            <Text className={styles.headerStatNum}>{allReminders.length - stats.pending}</Text>
-            <Text className={styles.headerStatLabel}>今日已联系</Text>
+            <Text className={styles.headerStatNum}>{contactFilterCounts.done}</Text>
+            <Text className={styles.headerStatLabel}>已联系</Text>
+          </View>
+          <View className={styles.headerStatItem}>
+            <Text className={styles.headerStatNum}>{contactFilterCounts.expiredUncontacted}</Text>
+            <Text className={styles.headerStatLabel}>已过期未联系</Text>
           </View>
         </View>
       </View>
 
       <View className={styles.content}>
+        <View className={styles.searchRow}>
+          <Input
+            className={styles.searchInput}
+            placeholder="搜索顾客姓名或项目..."
+            value={searchKeyword}
+            onInput={e => setSearchKeyword(e.detail.value)}
+          />
+          {searchKeyword && (
+            <Text className={styles.searchClear} onClick={() => setSearchKeyword('')}>×</Text>
+          )}
+        </View>
+
         <View className={styles.tabs}>
           {tabOptions.map(tab => (
             <Text
@@ -139,18 +203,42 @@ const RemindersPage: React.FC = () => {
           ))}
         </View>
 
+        <View className={styles.contactFilter}>
+          {contactFilterOptions.map(opt => (
+            <Text
+              key={opt.key}
+              className={classnames(styles.filterItem, contactFilter === opt.key && styles.filterItemActive)}
+              onClick={() => setContactFilter(opt.key)}
+            >
+              {opt.label}（{opt.count}）
+            </Text>
+          ))}
+        </View>
+
         <ScrollView className={styles.reminderList} scrollY>
           {computedReminders.length === 0 ? (
             <View className={styles.emptyState}>
-              <Text className={styles.emptyIcon}>📅</Text>
-              <Text className={styles.emptyText}>暂无需要提醒的客户</Text>
-              <Text className={styles.emptyHint}>保持良好的客户跟进~</Text>
+              <Text className={styles.emptyIcon}>
+                {contactFilter === 'done' ? '✅' : contactFilter === 'expiredUncontacted' ? '⌛' : '📅'}
+              </Text>
+              <Text className={styles.emptyText}>
+                {contactFilter === 'done' ? '还没有已联系的记录' :
+                 contactFilter === 'expiredUncontacted' ? '没有已过期但未联系的客户' :
+                 searchKeyword ? '没有匹配的客户，换个关键词试试' : '暂无需要提醒的客户'}
+              </Text>
+              <Text className={styles.emptyHint}>
+                {contactFilter === 'pending' ? '保持良好的客户跟进~' : '切换筛选看看其他分组'}
+              </Text>
             </View>
           ) : (
             computedReminders.map(reminder => (
               <View
                 key={reminder.id}
-                className={classnames(styles.reminderCard, reminder.contacted && styles.reminderCardContacted)}
+                className={classnames(
+                  styles.reminderCard,
+                  reminder.contacted && styles.reminderCardContacted,
+                  reminder.status === 'expired' && !reminder.contacted && styles.reminderCardExpired
+                )}
               >
                 <View className={styles.reminderHeader}>
                   <View className={styles.customerInfo} onClick={() => handleGoDetail(reminder.customerId)}>
@@ -159,6 +247,8 @@ const RemindersPage: React.FC = () => {
                   </View>
                   {reminder.contacted ? (
                     <Text className={styles.contactedBadge}>✓ 已联系</Text>
+                  ) : reminder.status === 'expired' ? (
+                    <Text className={styles.expiredBadge}>已过期</Text>
                   ) : (
                     isUrgent(reminder.suggestedDate) && (
                       <Text className={styles.urgentBadge}>紧急</Text>
@@ -179,7 +269,13 @@ const RemindersPage: React.FC = () => {
                   </View>
                   <View className={styles.detailRow}>
                     <Text className={styles.detailLabel}>建议预约</Text>
-                    <Text className={styles.detailValue}>{formatDateCN(reminder.suggestedDate)}</Text>
+                    <Text className={classnames(
+                      styles.detailValue,
+                      reminder.status === 'expired' && !reminder.contacted && styles.detailValueDanger
+                    )}>
+                      {formatDateCN(reminder.suggestedDate)}
+                      {reminder.status === 'expired' && ' (卡片已过期)'}
+                    </Text>
                   </View>
                 </View>
 

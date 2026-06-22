@@ -251,3 +251,194 @@
   font-size: $font-size-sm;
   color: $color-text-tertiary;
 }
+
+.contactItem {
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.contactHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+}
+
+.contactType {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.contactTypeBadge {
+  font-size: 20rpx;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-sm;
+  font-weight: $font-weight-normal;
+}
+
+.typeCopy {
+  background-color: rgba(80, 120, 255, 0.1);
+  color: #5078FF;
+}
+
+.typeCall {
+  background-color: rgba(64, 192, 87, 0.1);
+  color: #40C057;
+}
+
+.typeManual {
+  background-color: rgba(250, 173, 20, 0.12);
+  color: #FAAD14;
+}
+
+.contactTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.contactNoteRow {
+  margin-top: $spacing-xs;
+}
+
+.contactNote {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  line-height: 1.6;
+  background-color: $color-bg-page;
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.contactNoteEdit {
+  display: flex;
+  gap: $spacing-xs;
+  margin-top: $spacing-xs;
+  align-items: center;
+}
+
+.contactNoteInput {
+  flex: 1;
+  background-color: $color-bg-page;
+  border-radius: $radius-sm;
+  padding: 0 $spacing-md;
+  height: 64rpx;
+  font-size: $font-size-xs;
+  color: $color-text-primary;
+  box-sizing: border-box;
+}
+
+.contactNoteSave {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+  padding: 0 $spacing-sm;
+  height: 64rpx;
+  line-height: 64rpx;
+}
+
+.contactAddNote {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  margin-top: $spacing-xs;
+  display: inline-block;
+}
+
+.renewalItem {
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.renewalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+}
+
+.renewalTitle {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.renewalTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.renewalMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.renewalMetaTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.renewalNote {
+  margin-top: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  line-height: 1.6;
+  background-color: $color-bg-page;
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.headerActionRow {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.headerMiniBtn {
+  background: rgba(255, 255, 255, 0.2);
+  color: $color-text-white;
+  font-size: $font-size-xs;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $radius-button;
+  backdrop-filter: blur(10rpx);
+}
+
+.tabsBar {
+  display: flex;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: 8rpx;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.tabItem {
+  flex: 1;
+  text-align: center;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  padding: $spacing-sm 0;
+  border-radius: $radius-md;
+  transition: all 0.2s;
+
+  &.tabActive {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+    font-weight: $font-weight-semibold;
+  }
+}
+
